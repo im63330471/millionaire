@@ -8,6 +8,152 @@ Make it fun for kids, with a clear win message at the end if they reach the top 
 Put it all in one standalone HTML file.
 -->
 
-<h1>Header1</h1>
-<h2>Header2</h2>
-<h3>Header1</h3>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Who Wants to Be a Millionaire - Kids Edition</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; }
+        #game { max-width: 600px; margin: 20px auto; padding: 20px; background: white; border-radius: 10px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .option { display: block; width: 80%; margin: 10px auto; }
+        .lifeline { background: #ffd700; }
+        #chart { display: none; margin: 20px auto; }
+        canvas { max-width: 100%; }
+        #message { font-size: 1.2em; color: green; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="game">
+        <h1>Kids Millionaire Trivia!</h1>
+        <p id="score">Score: 0</p>
+        <p id="question"></p>
+        <button class="option" onclick="checkAnswer(0)"></button>
+        <button class="option" onclick="checkAnswer(1)"></button>
+        <button class="option" onclick="checkAnswer(2)"></button>
+        <button class="option" onclick="checkAnswer(3)"></button>
+        <p>
+            <button class="lifeline" onclick="use5050()" id="fifty">50/50</button>
+            <button class="lifeline" onclick="askAudience()" id="audience">Ask Audience</button>
+            <button class="lifeline" onclick="phoneFriend()" id="phone">Phone a Friend</button>
+        </p>
+        <p id="message"></p>
+        <canvas id="chart" width="400" height="200"></canvas>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "What color is the sky on a clear day?", answers: ["Blue", "Red", "Green", "Yellow"], correct: 0, points: 100 },
+            { question: "How many legs does a spider have?", answers: ["6", "8", "4", "10"], correct: 1, points: 200 },
+            { question: "What animal is known as man's best friend?", answers: ["Cat", "Dog", "Bird", "Fish"], correct: 1, points: 300 },
+            { question: "What is 2 + 2?", answers: ["3", "4", "5", "6"], correct: 1, points: 400 },
+            { question: "Which planet is closest to the Sun?", answers: ["Earth", "Venus", "Mercury", "Mars"], correct: 2, points: 500 },
+            { question: "What is the largest mammal?", answers: ["Elephant", "Blue Whale", "Giraffe", "Lion"], correct: 1, points: 1000 },
+            { question: "How many days are in a week?", answers: ["5", "6", "7", "8"], correct: 2, points: 2000 },
+            { question: "What gas do plants need to make food?", answers: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Helium"], correct: 2, points: 4000 },
+            { question: "Which country is famous for the Eiffel Tower?", answers: ["Italy", "France", "Spain", "Germany"], correct: 1, points: 8000 },
+            { question: "What is the capital of Japan?", answers: ["Beijing", "Seoul", "Tokyo", "Bangkok"], correct: 2, points: 16000 },
+            { question: "How many continents are there?", answers: ["5", "6", "7", "8"], correct: 2, points: 32000 },
+            { question: "What is the chemical symbol for water?", answers: ["H2O", "CO2", "O2", "N2"], correct: 0, points: 125000 },
+            { question: "Which inventor is credited with the light bulb?", answers: ["Tesla", "Edison", "Bell", "Ford"], correct: 1, points: 250000 },
+            { question: "What is the longest river in the world?", answers: ["Amazon", "Nile", "Yangtze", "Mississippi"], correct: 1, points: 500000 },
+            { question: "Who painted the Mona Lisa?", answers: ["Van Gogh", "Da Vinci", "Picasso", "Monet"], correct: 1, points: 1000000 }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let lifelines = { fifty: true, audience: true, phone: true };
+        let currentAnswers = [...questions[0].answers];
+        let chart = null;
+
+        function loadQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById("question").textContent = `Question ${currentQuestion + 1}: ${q.question}`;
+            document.getElementById("score").textContent = `Score: ${score}`;
+            document.getElementById("message").textContent = "";
+            currentAnswers = [...q.answers];
+            updateButtons();
+            if (chart) chart.destroy();
+            document.getElementById("chart").style.display = "none";
+        }
+
+        function updateButtons() {
+            const buttons = document.getElementsByClassName("option");
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].textContent = currentAnswers[i] || "";
+                buttons[i].style.display = currentAnswers[i] ? "block" : "none";
+            }
+            document.getElementById("fifty").disabled = !lifelines.fifty;
+            document.getElementById("audience").disabled = !lifelines.audience;
+            document.getElementById("phone").disabled = !lifelines.phone;
+        }
+
+        function checkAnswer(index) {
+            const q = questions[currentQuestion];
+            if (currentAnswers[index] === q.answers[q.correct]) {
+                score += q.points;
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    loadQuestion();
+                } else {
+                    document.getElementById("question").textContent = "Congratulations, You're a Millionaire!";
+                    document.getElementById("message").textContent = `Final Score: ${score}! You're a trivia superstar!`;
+                    document.getElementById("game").querySelectorAll("button").forEach(btn => btn.style.display = "none");
+                }
+            } else {
+                document.getElementById("message").textContent = `Game Over! Final Score: ${score}`;
+                document.getElementById("game").querySelectorAll("button").forEach(btn => btn.style.display = "none");
+            }
+        }
+
+        function use5050() {
+            if (!lifelines.fifty) return;
+            lifelines.fifty = false;
+            const q = questions[currentQuestion];
+            let wrong = [];
+            for (let i = 0; i < 4; i++) if (i !== q.correct) wrong.push(i);
+            wrong.sort(() => Math.random() - 0.5);
+            currentAnswers[wrong[0]] = currentAnswers[wrong[1]] = "";
+            updateButtons();
+        }
+
+        function askAudience() {
+            if (!lifelines.audience) return;
+            lifelines.audience = false;
+            const q = questions[currentQuestion];
+            let votes = [10, 10, 10, 10];
+            if (Math.random() < 0.9) {
+                votes[q.correct] = 70;
+                const remaining = 30 / 3;
+                for (let i = 0; i < 4; i++) if (i !== q.correct) votes[i] = remaining;
+            } else {
+                const wrong = (q.correct + 1) % 4;
+                votes[wrong] = 70;
+                const remaining = 30 / 3;
+                for (let i = 0; i < 4; i++) if (i !== wrong) votes[i] = remaining;
+            }
+            document.getElementById("chart").style.display = "block";
+            if (chart) chart.destroy();
+            chart = new Chart(document.getElementById("chart"), {
+                type: "bar",
+                data: {
+                    labels: currentAnswers,
+                    datasets: [{ label: "Audience Votes (%)", data: votes, backgroundColor: "#4caf50" }]
+                },
+                options: { scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
+
+        function phoneFriend() {
+            if (!lifelines.phone) return;
+            lifelines.phone = false;
+            const q = questions[currentQuestion];
+            document.getElementById("message").textContent = `Your friend says: "I'm sure it's ${q.answers[q.correct]}!"`;
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
